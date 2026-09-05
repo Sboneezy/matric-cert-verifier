@@ -3,398 +3,628 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Matric Certificate Verifier</title>
-
     <style>
+        :root {
+            --primary: #12355b;
+            --primary-dark: #0d2945;
+            --success: #166534;
+            --success-bg: #dcfce7;
+            --warning: #9a3412;
+            --warning-bg: #fff7ed;
+            --error: #991b1b;
+            --error-bg: #fee2e2;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --bg: #f4f6f8;
+            --card: #ffffff;
+        }
+
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
             color: #1f2937;
+            min-height: 100vh;
         }
 
+        /* Navigation */
+        .nav {
+            background: var(--primary);
+            color: white;
+            padding: 16px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .nav h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-tab {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .nav-tab:hover, .nav-tab.active {
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Layout */
         .container {
-            max-width: 900px;
-            margin: 60px auto;
-            padding: 20px;
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
 
         .card {
-            background: white;
+            background: var(--card);
             border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            margin-top: 0;
-            color: #12355b;
-        }
-
-        .subtitle {
-            color: #6b7280;
-            margin-bottom: 30px;
-        }
-
-        .upload-area {
-            border: 2px dashed #b8c2cc;
-            border-radius: 10px;
-            padding: 35px;
-            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             margin-bottom: 20px;
         }
 
-        input[type="file"] {
-            margin: 15px 0;
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 20px;
         }
 
-        button {
-            background: #12355b;
-            color: white;
-            border: none;
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #b8c2cc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(18, 53, 91, 0.03);
+        }
+
+        .upload-area .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
             padding: 12px 24px;
             border-radius: 7px;
+            border: none;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
-        button:hover {
-            background: #0d2945;
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
 
-        button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
 
-        #status {
-            margin-top: 20px;
-            padding: 12px;
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #14532d; }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary); color: white; }
+
+        /* Status */
+        .status {
+            padding: 14px;
             border-radius: 7px;
+            margin-top: 15px;
             display: none;
+            font-weight: 500;
         }
 
-        .success {
-            display: block !important;
-            background: #dcfce7;
-            color: #166534;
-        }
+        .status.show { display: block; }
+        .status.success { background: var(--success-bg); color: var(--success); }
+        .status.error { background: var(--error-bg); color: var(--error); }
+        .status.warning { background: var(--warning-bg); color: var(--warning); }
 
-        .error {
-            display: block !important;
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .result {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .result h2 {
-            color: #12355b;
+        /* Results */
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .field {
             display: flex;
             justify-content: space-between;
-            gap: 20px;
-            padding: 12px 0;
-            border-bottom: 1px solid #e5e7eb;
+            align-items: center;
+            padding: 14px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
         .field strong {
             color: #374151;
+            font-size: 14px;
         }
 
-        .ready {
-            color: #166534;
-            font-weight: bold;
+        .field .value {
+            font-weight: 600;
+            color: var(--primary);
         }
 
-        .warning {
-            margin-top: 20px;
+        .confidence-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .confidence-high { background: #dcfce7; color: #166534; }
+        .confidence-medium { background: #fef3c7; color: #92400e; }
+        .confidence-low { background: #fee2e2; color: #991b1b; }
+
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        /* Batch List */
+        .batch-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 15px;
-            background: #fff7ed;
-            color: #9a3412;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f9fafb;
+        }
+
+        .batch-item .batch-info {
+            flex: 1;
+        }
+
+        .batch-item .batch-status {
+            padding: 5px 14px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-draft { background: #e5e7eb; color: #374151; }
+        .status-submitted { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #dcfce7; color: #166534; }
+        .status-failed { background: #fee2e2; color: #991b1b; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+
+        /* Tabs */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Review Table */
+        .review-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .review-table th, .review-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .review-table input {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        /* File list */
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f9fafb;
             border-radius: 7px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .file-item .file-name {
+            font-weight: 500;
+        }
+
+        .file-item .file-size {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .field-grid { grid-template-columns: 1fr; }
+            .nav { flex-direction: column; gap: 10px; }
+            .nav-tabs { flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
-
 <body>
+
+<div class="nav">
+    <h1>Matric Certificate Verifier</h1>
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+        <button class="nav-tab" onclick="showTab('upload')">Upload</button>
+        <button class="nav-tab" onclick="showTab('batches')">Batches</button>
+        <button class="nav-tab" onclick="showTab('review')">Review</button>
+    </div>
+</div>
 
 <div class="container">
 
-    <div class="card">
-
-        <h1>Matric Certificate Verifier</h1>
-
-        <p class="subtitle">
-            Upload a matric certificate to extract its information
-            and perform an initial verification assessment.
-        </p>
-
-        <div class="upload-area">
-
-            <form id="verifyForm">
-
-                <input
-                    type="file"
-                    id="certificate"
-                    name="certificate"
-                    accept=".pdf"
-                    required
-                >
-
-                <br>
-
-                <button type="submit" id="verifyButton">
-                    Verify Certificate
-                </button>
-
-            </form>
-
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content active">
+        <div class="card">
+            <h2>Dashboard</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="number" id="statDocuments">0</div>
+                    <div class="label">Documents Processed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="statCandidates">0</div>
+                    <div class="label">Candidates Extracted</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="statBatches">0</div>
+                    <div class="label">Verification Batches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="statPendingReviews">0</div>
+                    <div class="label">Pending Reviews</div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div id="status"></div>
+    <!-- Upload Tab -->
+    <div id="upload" class="tab-content">
+        <div class="card">
+            <h2>Upload Certificates</h2>
+            <p style="color: var(--muted); margin-bottom: 15px;">
+                Upload one or more matric certificates for verification.
+                Accepted formats: PDF, JPG, PNG, TIFF
+            </p>
 
-        <div id="result" class="result">
-
-            <h2>Verification Result</h2>
-
-            <div class="field">
-                <strong>Provider</strong>
-                <span id="provider"></span>
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📄</div>
+                <p style="font-size: 18px; font-weight: 500;">Drop files here or click to browse</p>
+                <p style="color: var(--muted); margin-top: 5px;">Supports PDF, JPG, PNG, TIFF</p>
+                <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
             </div>
 
-            <div class="field">
-                <strong>Surname</strong>
-                <span id="surname"></span>
-            </div>
+            <div class="file-list" id="fileList"></div>
 
-            <div class="field">
-                <strong>Full Names</strong>
-                <span id="fullNames"></span>
-            </div>
+            <button class="btn btn-primary" id="processBtn" onclick="processFiles()" disabled style="margin-top: 15px;">
+                Process Files
+            </button>
 
-            <div class="field">
-                <strong>ID Number</strong>
-                <span id="idNumber"></span>
-            </div>
-
-            <div class="field">
-                <strong>Qualification</strong>
-                <span id="qualification"></span>
-            </div>
-
-            <div class="field">
-                <strong>Qualification Year</strong>
-                <span id="year"></span>
-            </div>
-
-            <div class="field">
-                <strong>Certificate Number</strong>
-                <span id="certificateNumber"></span>
-            </div>
-
-            <div class="field">
-                <strong>Status</strong>
-                <span id="decisionStatus"></span>
-            </div>
-
-            <div class="field">
-                <strong>Explanation</strong>
-                <span id="explanation"></span>
-            </div>
-
-            <div
-                id="warnings"
-                class="warning"
-                style="display:none;"
-            ></div>
-
+            <div class="status" id="uploadStatus"></div>
         </div>
+    </div>
 
+    <!-- Batches Tab -->
+    <div id="batches" class="tab-content">
+        <div class="card">
+            <h2>Verification Batches</h2>
+            <p style="color: var(--muted); margin-bottom: 15px;">
+                Manage verification batches and submit to providers.
+            </p>
+            <div id="batchList">
+                <p style="color: var(--muted);">No batches created yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Tab -->
+    <div id="review" class="tab-content">
+        <div class="card">
+            <h2>Human Review Queue</h2>
+            <p style="color: var(--muted); margin-bottom: 15px;">
+                Review and correct low-confidence extractions.
+            </p>
+            <div id="reviewList">
+                <p style="color: var(--muted);">No items pending review.</p>
+            </div>
+        </div>
     </div>
 
 </div>
 
 <script>
-    const form = document.getElementById("verifyForm");
-    const fileInput = document.getElementById("certificate");
-    const button = document.getElementById("verifyButton");
+    // State
+    let selectedFiles = [];
+    let processedResults = [];
 
-    const statusBox = document.getElementById("status");
-    const resultBox = document.getElementById("result");
-
-    const provider = document.getElementById("provider");
-    const surname = document.getElementById("surname");
-    const fullNames = document.getElementById("fullNames");
-    const idNumber = document.getElementById("idNumber");
-    const qualification = document.getElementById("qualification");
-    const year = document.getElementById("year");
-    const certificateNumber = document.getElementById("certificateNumber");
-    const decisionStatus = document.getElementById("decisionStatus");
-    const explanation = document.getElementById("explanation");
-    const warnings = document.getElementById("warnings");
-
-
-    function showStatus(message, type) {
-        statusBox.textContent = message;
-        statusBox.className = type;
+    // Tab management
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+        
+        if (tabName === 'dashboard') loadDashboard();
+        if (tabName === 'batches') loadBatches();
+        if (tabName === 'review') loadReviews();
     }
 
+    // File upload handling
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const processBtn = document.getElementById('processBtn');
 
-    function clearResult() {
-        resultBox.style.display = "none";
-
-        provider.textContent = "";
-        surname.textContent = "";
-        fullNames.textContent = "";
-        idNumber.textContent = "";
-        qualification.textContent = "";
-        year.textContent = "";
-        certificateNumber.textContent = "";
-        decisionStatus.textContent = "";
-        explanation.textContent = "";
-
-        warnings.textContent = "";
-        warnings.style.display = "none";
-    }
-
-
-    form.addEventListener("submit", async function(event) {
-
-        event.preventDefault();
-
-        clearResult();
-
-        const file = fileInput.files[0];
-
-        if (!file) {
-            showStatus("Please select a certificate PDF first.", "error");
-            return;
-        }
-
-
-        if (file.type !== "application/pdf" &&
-            !file.name.toLowerCase().endsWith(".pdf")) {
-
-            showStatus("Please select a PDF certificate.", "error");
-            return;
-        }
-
-
-        const formData = new FormData();
-
-        formData.append("certificate", file);
-
-
-        button.disabled = true;
-        button.textContent = "Verifying...";
-
-        showStatus("Uploading and analysing certificate...", "success");
-
-
-        try {
-
-            const response = await fetch("/verify", {
-                method: "POST",
-                body: formData
-            });
-
-
-            const data = await response.json();
-
-
-            if (!response.ok || !data.success) {
-
-                throw new Error(
-                    data.error || "Certificate verification failed."
-                );
-            }
-
-
-            provider.textContent = data.provider || "";
-
-            surname.textContent =
-                data.candidate?.surname || "";
-
-            fullNames.textContent =
-                data.candidate?.fullNames || "";
-
-            idNumber.textContent =
-                data.candidate?.idNumber || "";
-
-            qualification.textContent =
-                data.candidate?.qualificationType || "";
-
-            year.textContent =
-                data.candidate?.qualificationYear || "";
-
-            certificateNumber.textContent =
-                data.candidate?.certificateNumber || "";
-
-            decisionStatus.textContent =
-                data.decision?.status || "";
-
-            explanation.textContent =
-                data.decision?.explanation || "";
-
-
-            if (data.decision?.status === "Ready") {
-
-                decisionStatus.className = "ready";
-
-            } else {
-
-                decisionStatus.className = "";
-            }
-
-
-            if (
-                data.decision?.warnings &&
-                data.decision.warnings.length > 0
-            ) {
-
-                warnings.textContent =
-                    data.decision.warnings.join(" ");
-
-                warnings.style.display = "block";
-
-            }
-
-
-            resultBox.style.display = "block";
-
-            showStatus(
-                "Certificate processed successfully.",
-                "success"
-            );
-
-        } catch (error) {
-
-            console.error("Verification error:", error);
-
-            showStatus(
-                error.message || "An unexpected error occurred.",
-                "error"
-            );
-
-        } finally {
-
-            button.disabled = false;
-            button.textContent = "Verify Certificate";
-
-        }
-
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
     });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        addFiles(files);
+    });
+
+    fileInput.addEventListener('change', () => {
+        const files = Array.from(fileInput.files);
+        addFiles(files);
+        fileInput.value = '';
+    });
+
+    function addFiles(files) {
+        const validFiles = files.filter(f => {
+            const ext = f.name.toLowerCase().split('.').pop();
+            return ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'tif'].includes(ext);
+        });
+        
+        selectedFiles.push(...validFiles);
+        renderFileList();
+    }
+
+    function renderFileList() {
+        if (selectedFiles.length === 0) {
+            fileList.innerHTML = '';
+            processBtn.disabled = true;
+            return;
+        }
+        
+        fileList.innerHTML = selectedFiles.map((file, index) => `
+            <div class="file-item">
+                <div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatSize(file.size)}</div>
+                </div>
+                <button class="btn btn-outline" onclick="removeFile(${index})" style="padding: 6px 12px; font-size: 13px;">
+                    Remove
+                </button>
+            </div>
+        `).join('');
+        
+        processBtn.disabled = false;
+    }
+
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        renderFileList();
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Process files
+    async function processFiles() {
+        const statusBox = document.getElementById('uploadStatus');
+        processBtn.disabled = true;
+        
+        for (const file of selectedFiles) {
+            statusBox.className = 'status warning show';
+            statusBox.textContent = `Processing ${file.name}...`;
+            
+            const formData = new FormData();
+            formData.append('certificate', file);
+            
+            try {
+                const response = await fetch('/verify', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    processedResults.push({
+                        filename: file.name,
+                        result: data
+                    });
+                    statusBox.className = 'status success show';
+                    statusBox.textContent = `${file.name} processed successfully.`;
+                } else {
+                    statusBox.className = 'status error show';
+                    statusBox.textContent = `Error processing ${file.name}: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                statusBox.className = 'status error show';
+                statusBox.textContent = `Error: ${error.message}`;
+            }
+            
+            await new Promise(r => setTimeout(r, 500));
+        }
+        
+        selectedFiles = [];
+        renderFileList();
+        statusBox.className = 'status success show';
+        statusBox.textContent = `All files processed. ${processedResults.length} results available.`;
+    }
+
+    // Dashboard
+    async function loadDashboard() {
+        try {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            
+            document.getElementById('statDocuments').textContent = stats.documents || 0;
+            document.getElementById('statCandidates').textContent = stats.candidates || 0;
+            document.getElementById('statBatches').textContent = stats.batches || 0;
+            document.getElementById('statPendingReviews').textContent = stats.pendingReviews || 0;
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+
+    // Batches
+    async function loadBatches() {
+        const batchList = document.getElementById('batchList');
+        
+        try {
+            const response = await fetch('/api/batches');
+            const batches = await response.json();
+            
+            if (batches.length === 0) {
+                batchList.innerHTML = '<p style="color: var(--muted);">No batches created yet.</p>';
+                return;
+            }
+            
+            batchList.innerHTML = batches.map(batch => `
+                <div class="batch-item">
+                    <div class="batch-info">
+                        <strong>Batch #${batch.batchNumber}</strong> - ${batch.provider.name}
+                        <div style="font-size: 13px; color: var(--muted);">
+                            ${batch.candidateCount} candidates | Created: ${new Date(batch.createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <span class="batch-status status-${batch.status.toLowerCase()}">${batch.status}</span>
+                </div>
+            `).join('');
+        } catch (error) {
+            batchList.innerHTML = '<p style="color: var(--error);">Error loading batches.</p>';
+        }
+    }
+
+    // Reviews
+    async function loadReviews() {
+        const reviewList = document.getElementById('reviewList');
+        
+        try {
+            const response = await fetch('/api/reviews/pending');
+            const reviews = await response.json();
+            
+            if (reviews.length === 0) {
+                reviewList.innerHTML = '<p style="color: var(--muted);">No items pending review.</p>';
+                return;
+            }
+            
+            reviewList.innerHTML = reviews.map(review => `
+                <div class="batch-item">
+                    <div class="batch-info">
+                        <strong>${review.document}</strong>
+                        <div style="font-size: 13px; color: var(--muted);">
+                            ${review.fieldsToReview.length} fields need review
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="openReview('${review.id}')" style="padding: 8px 16px; font-size: 13px;">
+                        Review
+                    </button>
+                </div>
+            `).join('');
+        } catch (error) {
+            reviewList.innerHTML = '<p style="color: var(--error);">Error loading reviews.</p>';
+        }
+    }
+
+    // Initial load
+    loadDashboard();
 </script>
 
 </body>
