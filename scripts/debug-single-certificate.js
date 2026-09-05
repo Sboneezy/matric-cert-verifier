@@ -1,10 +1,3 @@
-﻿/**
- * Single Certificate OCR Debug Test
- * 
- * Runs OCR on a single certificate image/PDF with detailed output
- * showing each preprocessing variant's results side by side.
- */
-
 const fs = require("fs");
 const path = require("path");
 const OcrPreprocessor = require("../lib/ocr/OcrPreprocessor");

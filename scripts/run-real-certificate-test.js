@@ -1,20 +1,3 @@
-﻿/**
- * Real Certificate OCR Test Harness
- * 
- * This script is designed to systematically test the OCR pipeline
- * against real-world certificate images. It accepts multiple input
- * files and produces a comparison report.
- * 
- * Usage:
- *   node scripts/run-real-certificate-test.js <path-to-certificate-images>
- * 
- * The script will:
- * 1. Find all images/PDFs in the directory
- * 2. Run OCR on each with multiple strategies
- * 3. Compare extraction quality
- * 4. Generate a report
- */
-
 const fs = require("fs");
 const path = require("path");
 const DocumentClassifier = require("../lib/ocr/DocumentClassifier");

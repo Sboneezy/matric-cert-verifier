@@ -1,4 +1,4 @@
-﻿const path = require("path");
+const path = require("path");
 const OcrService = require("../lib/ocr/OcrService");
 
 async function main() {
@@ -22,7 +22,6 @@ async function main() {
         useVoting: process.argv.includes("--voting")
     };
     
-    // Parse scale option
     const scaleArg = process.argv.find(arg => arg.startsWith("--scale="));
     if (scaleArg) {
         options.scale = parseInt(scaleArg.split("=")[1]);
@@ -31,10 +30,10 @@ async function main() {
     console.log("================================");
     console.log("OCR PIPELINE TEST");
     console.log("================================");
-    console.log(Input: );
-    console.log(Voting: );
+    console.log(`Input: ${inputPath}`);
+    console.log(`Voting: ${options.useVoting ? "Enabled" : "Disabled"}`);
     if (options.scale) {
-        console.log(Scale: );
+        console.log(`Scale: ${options.scale}`);
     }
     
     const service = new OcrService();
@@ -55,11 +54,11 @@ async function main() {
         console.log("RESULTS");
         console.log("================================");
         
-        console.log(Strategy: );
+        console.log(`Strategy: ${result.strategy}`);
         
         if (result.classification) {
-            console.log(Document type: );
-            console.log(Extension: );
+            console.log(`Document type: ${result.classification.type}`);
+            console.log(`Extension: ${result.classification.extension}`);
         }
         
         console.log("");
@@ -69,9 +68,9 @@ async function main() {
         
         if (result.fields && Object.keys(result.fields).length > 0) {
             for (const [field, data] of Object.entries(result.fields)) {
-                console.log(${field}:  (% confidence));
-                console.log(  Source: );
-                console.log(  Method: );
+                console.log(`${field}: ${data.value} (${(data.confidence * 100).toFixed(1)}% confidence)`);
+                console.log(`  Source: ${data.source}`);
+                console.log(`  Method: ${data.description}`);
             }
         } else {
             console.log("No fields extracted.");
@@ -90,7 +89,7 @@ async function main() {
             console.log("-------------------------------");
             
             result.ranked.forEach((r, i) => {
-                console.log(${i + 1}. : %);
+                console.log(`${i + 1}. ${r.variant}: ${r.confidence}%`);
             });
         }
         
