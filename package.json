@@ -2,13 +2,21 @@
   "name": "matric-cert-verifier",
   "version": "1.0.0",
   "description": "Document intake and verification platform for South African matric certificates.",
-  "main": "app.js",
+  "main": "server.js",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
     "test": "jest --runInBand",
-    "start": "node app.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "lint": "eslint lib/ tests/ --fix",
+    "format": "prettier --write **/*.js",
+    "format:check": "prettier --check **/*.js",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "build": "npm pack --dry-run",
+    "ci": "npm test"
   },
   "keywords": [
     "matric",
