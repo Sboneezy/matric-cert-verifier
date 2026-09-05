@@ -1,24 +1,55 @@
-const assert = require("assert");
+﻿describe("BusinessRuleEngine", () => {
+    const BusinessRuleEngine = require("../lib/intake/BusinessRuleEngine");
 
-const BusinessRuleEngine = require("../lib/intake/BusinessRuleEngine");
+    test("evaluates candidate and assigns Umalusi provider for post-1992", () => {
+        const engine = new BusinessRuleEngine();
+        
+        const candidate = {
+            surname: "NKOSI",
+            fullNames: "JOHN PETER",
+            idNumber: "9201015009087",
+            qualificationType: "NATIONAL SENIOR CERTIFICATE",
+            qualificationYear: 2018,
+            certificateNumber: "ABC123456",
+            examinationNumber: null
+        };
 
-const engine = new BusinessRuleEngine();
+        const decision = engine.evaluate(candidate);
+        
+        expect(decision.provider).toBe("Umalusi");
+        expect(decision.status).toBe("Ready");
+        expect(decision.errors).toHaveLength(0);
+    });
 
-const candidate = {
-    surname: "NKOSI",
-    fullNames: "JOHN PETER",
-    idNumber: "9201015009087",
-    qualificationType: "NATIONAL SENIOR CERTIFICATE",
-    qualificationYear: 2018,
-    certificateNumber: "ABC123456",
-    examinationNumber: null
-};
+    test("assigns Department of Education for pre-1992 qualifications", () => {
+        const engine = new BusinessRuleEngine();
+        
+        const candidate = {
+            surname: "SMITH",
+            fullNames: "JANE",
+            idNumber: "6501010000000",
+            qualificationType: "MATRIC",
+            qualificationYear: 1985
+        };
 
-const decision = engine.evaluate(candidate);
+        const decision = engine.evaluate(candidate);
+        
+        expect(decision.provider).toBe("Department of Education");
+        expect(decision.explanation).toContain("1992");
+    });
 
-assert.strictEqual(decision.provider, "Umalusi");
-assert.strictEqual(decision.status, "Ready");
-assert.strictEqual(decision.errors.length, 0);
+    test("blocks when required fields are missing", () => {
+        const engine = new BusinessRuleEngine();
+        
+        const candidate = {
+            surname: "",
+            idNumber: "",
+            qualificationType: ""
+        };
 
-console.log("✅ BusinessRuleEngine passed");
-console.log(decision);
+        const decision = engine.evaluate(candidate);
+        
+        expect(decision.status).toBe("Blocked");
+        expect(decision.errors.length).toBeGreaterThan(0);
+    });
+});

@@ -1,25 +1,48 @@
-const Client = require("../lib/models/Client");
-const Candidate = require("../lib/models/Candidate");
-const JobService = require("../lib/services/JobService");
+﻿const JobService = require("../lib/services/JobService");
 
-const { getProvider } = require("../lib/providers/ProviderRegistry");
+describe('JobService', () => {
+  let jobService;
 
-const client = new Client({
-    companyName: "Awari Enterprise",
-    contactPerson: "Sibonelo Sithebe"
+  beforeEach(() => {
+    jobService = new JobService();
+  });
+
+  test('should create a new job', () => {
+    const jobData = {
+      type: 'verification',
+      data: { certificateId: 'test-123' }
+    };
+    
+    const job = jobService.createJob(jobData);
+    
+    expect(job).toBeDefined();
+    expect(job.id).toBeDefined();
+    expect(job.type).toBe('verification');
+    expect(job.status).toBe('Pending');
+    expect(job.createdAt).toBeDefined();
+  });
+
+  test('should get job by id', () => {
+    const jobData = {
+      type: 'verification',
+      data: { certificateId: 'test-456' }
+    };
+    
+    const createdJob = jobService.createJob(jobData);
+    const retrievedJob = jobService.getJob(createdJob.id);
+    
+    expect(retrievedJob).toEqual(createdJob);
+  });
+
+  test('should update job status', () => {
+    const jobData = {
+      type: 'verification',
+      data: { certificateId: 'test-789' }
+    };
+    
+    const job = jobService.createJob(jobData);
+    const updated = jobService.updateJobStatus(job.id, 'Completed');
+    
+    expect(updated.status).toBe('Completed');
+  });
 });
-
-const provider = getProvider("umalusi");
-
-const job = JobService.create(client, provider);
-
-JobService.addCandidate(job, new Candidate({
-    surname: "Sithebe",
-    fullNames: "Sibonelo"
-}));
-
-JobService.reviewCandidate(job, 0, {
-    surname: "Sithebe"
-});
-
-console.log(JSON.stringify(job, null, 2));

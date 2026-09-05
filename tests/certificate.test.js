@@ -1,42 +1,45 @@
-class Certificate {
-    constructor(data = {}) {
-        this.id = data.id || null;
+﻿const Certificate = require("../lib/models/Certificate");
 
-        // File information
-        this.originalFileName = data.originalFileName || "";
-        this.storedFileName = data.storedFileName || "";
-        this.filePath = data.filePath || "";
-        this.fileType = data.fileType || "";
-        this.fileSize = data.fileSize || 0;
+describe('Certificate', () => {
+  test('should create a certificate with valid data', () => {
+    const certData = {
+      number: 'NSC-2023-001',
+      type: 'National Senior Certificate',
+      year: 2023,
+      provider: 'Umalusi',
+      candidateId: 'cand-001'
+    };
+    
+    const cert = new Certificate(certData);
+    
+    expect(cert).toBeDefined();
+    expect(cert.number).toBe('NSC-2023-001');
+    expect(cert.type).toBe('National Senior Certificate');
+    expect(cert.year).toBe(2023);
+    expect(cert.provider).toBe('Umalusi');
+  });
 
-        // Processing status
-        this.uploadDate = data.uploadDate || new Date();
-        this.processingStatus = "Uploaded";
+  test('should validate certificate number format', () => {
+    const validCert = new Certificate({
+      number: 'NSC-2023-001',
+      type: 'National Senior Certificate',
+      year: 2023
+    });
+    
+    expect(validCert.isValid()).toBe(true);
+  });
 
-        // Extraction
-        this.extracted = false;
-        this.extractedAt = null;
-        this.candidateId = null;
-
-        // Errors
-        this.errors = [];
-    }
-
-    markExtracted(candidateId) {
-        this.processingStatus = "Extracted";
-        this.extracted = true;
-        this.extractedAt = new Date();
-        this.candidateId = candidateId;
-    }
-
-    markFailed(error) {
-        this.processingStatus = "Failed";
-        this.errors.push(error);
-    }
-
-    toJSON() {
-        return { ...this };
-    }
-}
-
-module.exports = Certificate;
+  test('should return certificate details', () => {
+    const cert = new Certificate({
+      number: 'NSC-2023-001',
+      type: 'National Senior Certificate',
+      year: 2023,
+      provider: 'Umalusi'
+    });
+    
+    const details = cert.getDetails();
+    expect(details).toHaveProperty('number', 'NSC-2023-001');
+    expect(details).toHaveProperty('type', 'National Senior Certificate');
+    expect(details).toHaveProperty('year', 2023);
+  });
+});

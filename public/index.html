@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Matric Certificate Verifier</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #12355b;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed #b8c2cc;
+            border-radius: 10px;
+            padding: 35px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+        }
+
+        button {
+            background: #12355b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0d2945;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 7px;
+            display: none;
+        }
+
+        .success {
+            display: block !important;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            display: block !important;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result h2 {
+            color: #12355b;
+        }
+
+        .field {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .field strong {
+            color: #374151;
+        }
+
+        .ready {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .warning {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff7ed;
+            color: #9a3412;
+            border-radius: 7px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Matric Certificate Verifier</h1>
+
+        <p class="subtitle">
+            Upload a matric certificate to extract its information
+            and perform an initial verification assessment.
+        </p>
+
+        <div class="upload-area">
+
+            <form id="verifyForm">
+
+                <input
+                    type="file"
+                    id="certificate"
+                    name="certificate"
+                    accept=".pdf"
+                    required
+                >
+
+                <br>
+
+                <button type="submit" id="verifyButton">
+                    Verify Certificate
+                </button>
+
+            </form>
+
+        </div>
+
+        <div id="status"></div>
+
+        <div id="result" class="result">
+
+            <h2>Verification Result</h2>
+
+            <div class="field">
+                <strong>Provider</strong>
+                <span id="provider"></span>
+            </div>
+
+            <div class="field">
+                <strong>Surname</strong>
+                <span id="surname"></span>
+            </div>
+
+            <div class="field">
+                <strong>Full Names</strong>
+                <span id="fullNames"></span>
+            </div>
+
+            <div class="field">
+                <strong>ID Number</strong>
+                <span id="idNumber"></span>
+            </div>
+
+            <div class="field">
+                <strong>Qualification</strong>
+                <span id="qualification"></span>
+            </div>
+
+            <div class="field">
+                <strong>Qualification Year</strong>
+                <span id="year"></span>
+            </div>
+
+            <div class="field">
+                <strong>Certificate Number</strong>
+                <span id="certificateNumber"></span>
+            </div>
+
+            <div class="field">
+                <strong>Status</strong>
+                <span id="decisionStatus"></span>
+            </div>
+
+            <div class="field">
+                <strong>Explanation</strong>
+                <span id="explanation"></span>
+            </div>
+
+            <div
+                id="warnings"
+                class="warning"
+                style="display:none;"
+            ></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const form = document.getElementById("verifyForm");
+    const fileInput = document.getElementById("certificate");
+    const button = document.getElementById("verifyButton");
+
+    const statusBox = document.getElementById("status");
+    const resultBox = document.getElementById("result");
+
+    const provider = document.getElementById("provider");
+    const surname = document.getElementById("surname");
+    const fullNames = document.getElementById("fullNames");
+    const idNumber = document.getElementById("idNumber");
+    const qualification = document.getElementById("qualification");
+    const year = document.getElementById("year");
+    const certificateNumber = document.getElementById("certificateNumber");
+    const decisionStatus = document.getElementById("decisionStatus");
+    const explanation = document.getElementById("explanation");
+    const warnings = document.getElementById("warnings");
+
+
+    function showStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = type;
+    }
+
+
+    function clearResult() {
+        resultBox.style.display = "none";
+
+        provider.textContent = "";
+        surname.textContent = "";
+        fullNames.textContent = "";
+        idNumber.textContent = "";
+        qualification.textContent = "";
+        year.textContent = "";
+        certificateNumber.textContent = "";
+        decisionStatus.textContent = "";
+        explanation.textContent = "";
+
+        warnings.textContent = "";
+        warnings.style.display = "none";
+    }
+
+
+    form.addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        clearResult();
+
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showStatus("Please select a certificate PDF first.", "error");
+            return;
+        }
+
+
+        if (file.type !== "application/pdf" &&
+            !file.name.toLowerCase().endsWith(".pdf")) {
+
+            showStatus("Please select a PDF certificate.", "error");
+            return;
+        }
+
+
+        const formData = new FormData();
+
+        formData.append("certificate", file);
+
+
+        button.disabled = true;
+        button.textContent = "Verifying...";
+
+        showStatus("Uploading and analysing certificate...", "success");
+
+
+        try {
+
+            const response = await fetch("/verify", {
+                method: "POST",
+                body: formData
+            });
+
+
+            const data = await response.json();
+
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(
+                    data.error || "Certificate verification failed."
+                );
+            }
+
+
+            provider.textContent = data.provider || "";
+
+            surname.textContent =
+                data.candidate?.surname || "";
+
+            fullNames.textContent =
+                data.candidate?.fullNames || "";
+
+            idNumber.textContent =
+                data.candidate?.idNumber || "";
+
+            qualification.textContent =
+                data.candidate?.qualificationType || "";
+
+            year.textContent =
+                data.candidate?.qualificationYear || "";
+
+            certificateNumber.textContent =
+                data.candidate?.certificateNumber || "";
+
+            decisionStatus.textContent =
+                data.decision?.status || "";
+
+            explanation.textContent =
+                data.decision?.explanation || "";
+
+
+            if (data.decision?.status === "Ready") {
+
+                decisionStatus.className = "ready";
+
+            } else {
+
+                decisionStatus.className = "";
+            }
+
+
+            if (
+                data.decision?.warnings &&
+                data.decision.warnings.length > 0
+            ) {
+
+                warnings.textContent =
+                    data.decision.warnings.join(" ");
+
+                warnings.style.display = "block";
+
+            }
+
+
+            resultBox.style.display = "block";
+
+            showStatus(
+                "Certificate processed successfully.",
+                "success"
+            );
+
+        } catch (error) {
+
+            console.error("Verification error:", error);
+
+            showStatus(
+                error.message || "An unexpected error occurred.",
+                "error"
+            );
+
+        } finally {
+
+            button.disabled = false;
+            button.textContent = "Verify Certificate";
+
+        }
+
+    });
+</script>
+
+</body>
+</html>

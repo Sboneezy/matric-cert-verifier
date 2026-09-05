@@ -134,3 +134,29 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+# ============================================================
+# Matric Certificate Verifier - Project Specific
+# ============================================================
+
+# Uploaded documents
+uploads/
+
+# Generated OCR images
+*-ocr-page-*.png
+*-page-*.png
+
+# Generated OCR/preprocessing outputs
+*-preprocessed.png
+
+# Temporary/generated certificate files
+*.tmp
+
+# Local OCR data/cache
+tessdata/
+eng.traineddata
+
+# Local test artifacts
+tests/*.png
+
+# Keep test PDFs only if they are intentionally committed
+# tests/*.pdf
