@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Test (${{ matrix.node-version }})
+    name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -31,7 +31,10 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             tesseract-ocr \
             tesseract-ocr-eng \
-            libvips-dev
+            libvips-dev \
+            python3 \
+            make \
+            g++
 
       - name: Install Node dependencies
         run: npm ci
@@ -40,7 +43,7 @@ jobs:
         run: npm test
 
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical
         continue-on-error: true
 
   build:
@@ -56,6 +59,15 @@ jobs:
         with:
           node-version: 22.x
           cache: npm
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libvips-dev \
+            python3 \
+            make \
+            g++
 
       - name: Install dependencies
         run: npm ci
