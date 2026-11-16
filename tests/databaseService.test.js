@@ -1,4 +1,4 @@
-describe("DatabaseService", () => {
+﻿describe("DatabaseService", () => {
     const DatabaseService = require("../lib/database/DatabaseService");
     const path = require("path");
     const fs = require("fs");
@@ -110,7 +110,7 @@ describe("DatabaseService", () => {
     test("logs and retrieves audit entries", () => {
         db.logAudit("TEST", "candidate", "CAND-001", { action: "test" });
         
-        const auditLog = db.getAuditLog("candidate");
+        const auditLog = db.getAuditLog({ entityType: "candidate" });
         
         expect(auditLog.length).toBeGreaterThan(0);
         expect(auditLog[0].action).toBe("TEST");
@@ -135,3 +135,4 @@ describe("DatabaseService", () => {
         expect(stats.documents).toBe(1);
     });
 });
+
