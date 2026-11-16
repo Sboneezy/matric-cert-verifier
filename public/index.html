@@ -507,6 +507,7 @@
     async function processFiles() {
         const statusBox = document.getElementById('uploadStatus');
         processBtn.disabled = true;
+        const apiKey = localStorage.getItem('apiKey') || '';
         
         for (const file of selectedFiles) {
             statusBox.className = 'status warning show';
@@ -516,8 +517,12 @@
             formData.append('certificate', file);
             
             try {
-                const response = await fetch('/verify', {
+                const headers = {};
+                if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+                const response = await fetch('/api/v1/verify', {
                     method: 'POST',
+                    headers,
                     body: formData
                 });
                 
@@ -532,7 +537,7 @@
                     statusBox.textContent = `${file.name} processed successfully.`;
                 } else {
                     statusBox.className = 'status error show';
-                    statusBox.textContent = `Error processing ${file.name}: ${data.error || 'Unknown error'}`;
+                    statusBox.textContent = `Error processing ${file.name}: ${(data.error && data.error.message) || 'Unknown error'}`;
                 }
             } catch (error) {
                 statusBox.className = 'status error show';
@@ -544,19 +549,22 @@
         
         selectedFiles = [];
         renderFileList();
-        statusBox.className = 'status success show';
-        statusBox.textContent = `All files processed. ${processedResults.length} results available.`;
+        if (processedResults.length > 0) {
+            statusBox.className = 'status success show';
+            statusBox.textContent = `All files processed. ${processedResults.length} results available.`;
+        }
     }
 
     // Dashboard
     async function loadDashboard() {
         try {
             const response = await fetch('/api/stats');
-            const stats = await response.json();
+            const json = await response.json();
+            const stats = json.data || json;
             
             document.getElementById('statDocuments').textContent = stats.documents || 0;
             document.getElementById('statCandidates').textContent = stats.candidates || 0;
-            document.getElementById('statBatches').textContent = stats.batches || 0;
+            document.getElementById('statBatches').textContent = stats.verificationRequests || stats.batches || 0;
             document.getElementById('statPendingReviews').textContent = stats.pendingReviews || 0;
         } catch (error) {
             console.error('Error loading dashboard:', error);
@@ -569,9 +577,10 @@
         
         try {
             const response = await fetch('/api/batches');
-            const batches = await response.json();
+            const json = await response.json();
+            const batches = json.data || json;
             
-            if (batches.length === 0) {
+            if (!batches || batches.length === 0) {
                 batchList.innerHTML = '<p style="color: var(--muted);">No batches created yet.</p>';
                 return;
             }
@@ -579,12 +588,12 @@
             batchList.innerHTML = batches.map(batch => `
                 <div class="batch-item">
                     <div class="batch-info">
-                        <strong>Batch #${batch.batchNumber}</strong> - ${batch.provider.name}
+                        <strong>Batch #${batch.batch_number || batch.batchNumber}</strong> — ${batch.provider || ''}
                         <div style="font-size: 13px; color: var(--muted);">
-                            ${batch.candidateCount} candidates | Created: ${new Date(batch.createdAt).toLocaleDateString()}
+                            ${batch.candidate_count || batch.candidateCount || 0} candidates | Created: ${new Date(batch.created_at || batch.createdAt).toLocaleDateString()}
                         </div>
                     </div>
-                    <span class="batch-status status-${batch.status.toLowerCase()}">${batch.status}</span>
+                    <span class="batch-status status-${(batch.status || 'draft').toLowerCase()}">${batch.status || 'Draft'}</span>
                 </div>
             `).join('');
         } catch (error) {
@@ -599,25 +608,30 @@
         try {
             const response = await fetch('/api/reviews/pending');
             const reviews = await response.json();
+            const list = Array.isArray(reviews) ? reviews : (reviews.data || []);
             
-            if (reviews.length === 0) {
+            if (list.length === 0) {
                 reviewList.innerHTML = '<p style="color: var(--muted);">No items pending review.</p>';
                 return;
             }
             
-            reviewList.innerHTML = reviews.map(review => `
+            reviewList.innerHTML = list.map(review => {
+                const corrections = review.corrections || {};
+                const fields = corrections.fieldsToReview || [];
+                const docLabel = corrections.document || review.extraction_id || review.id;
+                return `
                 <div class="batch-item">
                     <div class="batch-info">
-                        <strong>${review.document}</strong>
+                        <strong>${docLabel}</strong>
                         <div style="font-size: 13px; color: var(--muted);">
-                            ${review.fieldsToReview.length} fields need review
+                            ${fields.length} field(s) need review
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="openReview('${review.id}')" style="padding: 8px 16px; font-size: 13px;">
+                    <button class="btn btn-primary" onclick="alert('Review ${review.id}')" style="padding: 8px 16px; font-size: 13px;">
                         Review
                     </button>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } catch (error) {
             reviewList.innerHTML = '<p style="color: var(--error);">Error loading reviews.</p>';
         }

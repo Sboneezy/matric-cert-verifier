@@ -138,6 +138,18 @@ dist
 # Matric Certificate Verifier - Project Specific
 # ============================================================
 
+# SQLite database
+data/
+
+# Generated template files
+generated/
+
+# Probe/scratch scripts
+scripts/probe-*.js
+
+# Test-generated PDFs at project root
+*.pdf
+
 # Uploaded documents
 uploads/
 
