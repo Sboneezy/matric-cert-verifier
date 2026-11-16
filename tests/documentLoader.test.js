@@ -1,24 +1,38 @@
-﻿describe("DocumentLoader", () => {
-    const fs = require("fs");
-    const path = require("path");
-    const DocumentLoader = require("../lib/intake/DocumentLoader");
+"use strict";
 
-    test("loads a document with correct metadata", () => {
-        const loader = new DocumentLoader();
-        const samplePath = path.join(__dirname, "document-loader-sample.pdf");
-        
-        fs.writeFileSync(samplePath, "Fake PDF Content");
+const fs   = require("fs");
+const path = require("path");
+const DocumentLoader = require("../lib/intake/DocumentLoader");
 
-        try {
-            const document = loader.load(samplePath);
-            
-            expect(document.name).toBe("document-loader-sample.pdf");
-            expect(document.extension).toBe(".pdf");
-            expect(document.size).toBe(16);
-        } finally {
-            if (fs.existsSync(samplePath)) {
-                fs.unlinkSync(samplePath);
-            }
-        }
+describe("DocumentLoader", () => {
+
+    const loader = new DocumentLoader();
+    const tmpPath = path.join(__dirname, "tmp-loader-test.pdf");
+
+    beforeAll(() => {
+        fs.writeFileSync(tmpPath, "Fake PDF Content");
+    });
+
+    afterAll(() => {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    });
+
+    test("loads a file and returns metadata", () => {
+        const doc = loader.load(tmpPath);
+
+        expect(doc).toBeDefined();
+        expect(doc.name).toBe("tmp-loader-test.pdf");
+        expect(doc.extension).toBe(".pdf");
+        expect(doc.size).toBeGreaterThan(0);
+        expect(doc.path).toBe(tmpPath);
+    });
+
+    test("throws when no path is provided", () => {
+        expect(() => loader.load(null)).toThrow();
+        expect(() => loader.load("")).toThrow();
+    });
+
+    test("throws when the file does not exist", () => {
+        expect(() => loader.load("/nonexistent/path/file.pdf")).toThrow();
     });
 });
