@@ -64,6 +64,12 @@ describe("Matric Verifier HTTP Integration", () => {
 
             apiKey = "test-integration-api-key";
 
+            db.createClient({
+                id: "integration-test",
+                name: "Integration Test Client",
+                email: null
+            });
+
             db.createApiKey(
                 apiKey,
                 "integration-test",
