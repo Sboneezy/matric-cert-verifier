@@ -176,3 +176,5 @@ tests/*.png
 review-dump.txt
 jest-baseline.txt
 jest-tenant.txt
+jest-int.txt
+jest-routes.txt
