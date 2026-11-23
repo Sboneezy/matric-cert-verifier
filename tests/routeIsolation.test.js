@@ -7,9 +7,9 @@ const { tenantRepo } = require("../lib/middleware/tenant");
 const ROUTES_DIR = path.join(__dirname, "..", "lib", "routes");
 
 // Routes already moved to req.repo. These must never touch the global db.
-const MIGRATED = ["stats.js", "audit.js", "verify.js"];
+const MIGRATED = ["stats.js", "audit.js", "verify.js", "reviews.js"];
 // Still on the legacy path. Move each to MIGRATED as it is converted.
-const PENDING = ["candidates.js", "reviews.js", "batches.js", "keys.js"];
+const PENDING = ["candidates.js", "batches.js", "keys.js"];
 
 const GLOBAL_DB = /locals\.db|\bdb\.(create|get|list|update|save|log|revoke|touch)[A-Za-z]*\(/;
 
