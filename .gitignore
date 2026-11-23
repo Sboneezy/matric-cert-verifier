@@ -175,3 +175,4 @@ tests/*.png
 *.backup
 review-dump.txt
 jest-baseline.txt
+jest-tenant.txt
