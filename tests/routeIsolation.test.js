@@ -7,9 +7,9 @@ const { tenantRepo } = require("../lib/middleware/tenant");
 const ROUTES_DIR = path.join(__dirname, "..", "lib", "routes");
 
 // Routes already moved to req.repo. These must never touch the global db.
-const MIGRATED = ["stats.js", "audit.js", "verify.js", "reviews.js", "batches.js", "keys.js"];
+const MIGRATED = ["stats.js", "audit.js", "verify.js", "reviews.js", "batches.js", "keys.js", "candidates.js"];
 // Still on the legacy path. Move each to MIGRATED as it is converted.
-const PENDING = ["candidates.js"];
+const PENDING = [];
 
 const GLOBAL_DB = /locals\.db|\bdb\.(create|get|list|update|save|log|revoke|touch)[A-Za-z]*\(/;
 
@@ -29,7 +29,8 @@ describe("route isolation inventory", () => {
         expect(src).not.toMatch(GLOBAL_DB);
     });
 
-    test.each(PENDING)("%s is still on the legacy path", (file) => {
+    (PENDING.length ? test.each(PENDING) : test.each([["(none)"]]))("%s is still on the legacy path", (file) => {
+        if (file === "(none)") return; // every route is migrated
         // Documents the remaining work. Fails when a file is migrated
         // but not moved to MIGRATED, so the list stays honest.
         const src = fs.readFileSync(path.join(ROUTES_DIR, file), "utf8");
@@ -71,5 +72,21 @@ describe("tenantRepo middleware", () => {
         expect(ctx.actor).not.toContain("kkkk");
         expect(ctx.ip).toBe("1.2.3.4");
         expect(req.repo).toBeDefined();
+    });
+});
+describe("no route or app wiring bypasses the tenant repository", () => {
+    const APP = path.join(__dirname, "..", "app.js");
+
+    test("app.js never calls legacy database methods", () => {
+        const src = fs.readFileSync(APP, "utf8");
+        expect(src).not.toMatch(/\bdb\.(create|get|list|update|save|log|revoke|touch)[A-Za-z]*\(/);
+    });
+
+    test("every route file in lib/routes applies tenantRepo", () => {
+        const files = fs.readdirSync(ROUTES_DIR).filter((f) => f.endsWith(".js"));
+        for (const f of files) {
+            const src = fs.readFileSync(path.join(ROUTES_DIR, f), "utf8");
+            expect(src).toMatch(/router\.use\(tenantRepo\)/);
+        }
     });
 });
