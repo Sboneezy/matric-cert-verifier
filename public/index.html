@@ -333,6 +333,16 @@
 </div>
 
 <div class="container">
+    <div class="card" id="keyBar" style="padding:16px 30px;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <strong>API key</strong>
+            <input type="password" id="apiKeyInput" placeholder="Paste your API key" autocomplete="off"
+                   style="flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:5px;">
+            <button class="btn btn-primary" onclick="saveKey()" style="padding:8px 16px;">Save</button>
+            <button class="btn btn-outline" onclick="clearKey()" style="padding:8px 16px;">Clear</button>
+            <span id="keyStatus" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+    </div>
 
     <!-- Dashboard Tab -->
     <div id="dashboard" class="tab-content active">
@@ -416,6 +426,67 @@
 <script>
     // State
     let selectedFiles = [];
+
+    // ---- API key handling (sessionStorage: cleared when the tab closes) ----
+    try { localStorage.removeItem('apiKey'); } catch (e) {}
+
+    function getApiKey() {
+        try { return sessionStorage.getItem('apiKey') || ''; } catch (e) { return ''; }
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ));
+    }
+
+    function updateKeyStatus(msg) {
+        const el = document.getElementById('keyStatus');
+        el.textContent = msg || (getApiKey() ? 'Key set for this tab.' : 'No key set.');
+    }
+
+    function resetViews() {
+        ['statDocuments', 'statCandidates', 'statBatches', 'statPendingReviews']
+            .forEach(id => { document.getElementById(id).textContent = '0'; });
+        document.getElementById('batchList').innerHTML = '<p style="color: var(--muted);">Enter an API key to view batches.</p>';
+        document.getElementById('reviewList').innerHTML = '<p style="color: var(--muted);">Enter an API key to view reviews.</p>';
+    }
+
+    function saveKey() {
+        const input = document.getElementById('apiKeyInput');
+        const v = input.value.trim();
+        if (!v) return;
+        sessionStorage.setItem('apiKey', v);
+        input.value = '';
+        updateKeyStatus();
+        loadDashboard();
+    }
+
+    function clearKey() {
+        try { sessionStorage.removeItem('apiKey'); } catch (e) {}
+        resetViews();
+        updateKeyStatus();
+    }
+
+    function handleUnauthorized() {
+        clearKey();
+        updateKeyStatus('API key rejected or revoked. Enter a valid key.');
+    }
+
+    async function apiFetch(url, options) {
+        const key = getApiKey();
+        if (!key) throw new Error('API key required. Enter it at the top of the page.');
+        const opts = Object.assign({}, options);
+        opts.headers = Object.assign({}, opts.headers, { Authorization: 'Bearer ' + key });
+        const res = await fetch(url, opts);
+        if (res.status === 401) {
+            handleUnauthorized();
+            throw new Error('API key rejected.');
+        }
+        return res;
+    }
+
+    updateKeyStatus();
     let processedResults = [];
 
     // Tab management
@@ -480,7 +551,7 @@
         fileList.innerHTML = selectedFiles.map((file, index) => `
             <div class="file-item">
                 <div>
-                    <div class="file-name">${file.name}</div>
+                    <div class="file-name">${esc(file.name)}</div>
                     <div class="file-size">${formatSize(file.size)}</div>
                 </div>
                 <button class="btn btn-outline" onclick="removeFile(${index})" style="padding: 6px 12px; font-size: 13px;">
@@ -507,7 +578,13 @@
     async function processFiles() {
         const statusBox = document.getElementById('uploadStatus');
         processBtn.disabled = true;
-        const apiKey = localStorage.getItem('apiKey') || '';
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            processBtn.disabled = false;
+            statusBox.className = 'status error show';
+            statusBox.textContent = 'Enter your API key first.';
+            return;
+        }
         
         for (const file of selectedFiles) {
             statusBox.className = 'status warning show';
@@ -526,6 +603,13 @@
                     body: formData
                 });
                 
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    processBtn.disabled = false;
+                    statusBox.className = 'status error show';
+                    statusBox.textContent = 'API key rejected. Enter a valid key.';
+                    return;
+                }
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
@@ -558,13 +642,13 @@
     // Dashboard
     async function loadDashboard() {
         try {
-            const response = await fetch('/api/stats');
+            const response = await apiFetch('/api/v1/stats');
             const json = await response.json();
             const stats = json.data || json;
             
             document.getElementById('statDocuments').textContent = stats.documents || 0;
             document.getElementById('statCandidates').textContent = stats.candidates || 0;
-            document.getElementById('statBatches').textContent = stats.verificationRequests || stats.batches || 0;
+            document.getElementById('statBatches').textContent = stats.batches || 0;
             document.getElementById('statPendingReviews').textContent = stats.pendingReviews || 0;
         } catch (error) {
             console.error('Error loading dashboard:', error);
@@ -576,7 +660,7 @@
         const batchList = document.getElementById('batchList');
         
         try {
-            const response = await fetch('/api/batches');
+            const response = await apiFetch('/api/v1/batches');
             const json = await response.json();
             const batches = json.data || json;
             
@@ -588,7 +672,7 @@
             batchList.innerHTML = batches.map(batch => `
                 <div class="batch-item">
                     <div class="batch-info">
-                        <strong>Batch #${batch.batch_number || batch.batchNumber}</strong> — ${batch.provider || ''}
+                        <strong>Batch #${batch.batch_number || batch.batchNumber}</strong> — ${esc(batch.provider)}
                         <div style="font-size: 13px; color: var(--muted);">
                             ${batch.candidate_count || batch.candidateCount || 0} candidates | Created: ${new Date(batch.created_at || batch.createdAt).toLocaleDateString()}
                         </div>
@@ -597,7 +681,7 @@
                 </div>
             `).join('');
         } catch (error) {
-            batchList.innerHTML = '<p style="color: var(--error);">Error loading batches.</p>';
+            batchList.innerHTML = '<p style="color: var(--error);">' + esc(error.message) + '</p>';
         }
     }
 
@@ -606,7 +690,7 @@
         const reviewList = document.getElementById('reviewList');
         
         try {
-            const response = await fetch('/api/reviews/pending');
+            const response = await apiFetch('/api/v1/reviews/pending');
             const reviews = await response.json();
             const list = Array.isArray(reviews) ? reviews : (reviews.data || []);
             
@@ -622,7 +706,7 @@
                 return `
                 <div class="batch-item">
                     <div class="batch-info">
-                        <strong>${docLabel}</strong>
+                        <strong>${esc(docLabel)}</strong>
                         <div style="font-size: 13px; color: var(--muted);">
                             ${fields.length} field(s) need review
                         </div>
@@ -633,7 +717,7 @@
                 </div>`;
             }).join('');
         } catch (error) {
-            reviewList.innerHTML = '<p style="color: var(--error);">Error loading reviews.</p>';
+            reviewList.innerHTML = '<p style="color: var(--error);">' + esc(error.message) + '</p>';
         }
     }
 

@@ -89,10 +89,6 @@ function createApp({ db } = {}) {
 
     app.use(express.static(path.join(__dirname, "public")));
 
-    // Public frontend compatibility routes
-    app.use("/api/stats", statsRouter);
-    app.use("/api/batches", batchesRouter);
-    app.use("/api/reviews", reviewsRouter);
 
     // Authenticated API routes
     const apiAuth = requireApiKey(db);
