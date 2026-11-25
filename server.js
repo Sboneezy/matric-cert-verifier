@@ -21,14 +21,6 @@ const server = app.listen(env.port, () => {
     );
 
     if (env.isDevelopment) {
-        if (!db.getClient("dev")) {
-            db.createClient({
-                id: "dev",
-                name: "Development",
-                email: null
-            });
-        }
-
         // API keys must be provisioned explicitly using
         // scripts/bootstrap-client.js. Never generate or log
         // credentials during application startup.
