@@ -172,3 +172,12 @@ tests/*.png
 
 # Keep test PDFs only if they are intentionally committed
 # tests/*.pdf
+*.backup
+review-dump.txt
+jest-baseline.txt
+jest-tenant.txt
+jest-int.txt
+jest-routes.txt
+patch-inspection.txt
+*.bak
+*.bak-*

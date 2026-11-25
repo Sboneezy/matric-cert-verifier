@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 const env = require("./lib/config/env");
 const logger = require("./lib/config/logger");
@@ -20,17 +20,18 @@ const server = app.listen(env.port, () => {
         `Matric Certificate Verifier running on http://localhost:${env.port}`
     );
 
-    if (env.isDevelopment && db.listApiKeys().length === 0) {
-        const SecurityService = require("./lib/security/SecurityService");
-        const security = new SecurityService();
-        const key = security.generateApiKey();
+    if (env.isDevelopment) {
+        if (!db.getClient("dev")) {
+            db.createClient({
+                id: "dev",
+                name: "Development",
+                email: null
+            });
+        }
 
-        db.createApiKey(key, "dev", "Development bootstrap key");
-
-        logger.warn(
-            { key },
-            "DEV BOOTSTRAP KEY created - use this for local API calls"
-        );
+        // API keys must be provisioned explicitly using
+        // scripts/bootstrap-client.js. Never generate or log
+        // credentials during application startup.
     }
 });
 

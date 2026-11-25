@@ -64,6 +64,12 @@ describe("Matric Verifier HTTP Integration", () => {
 
             apiKey = "test-integration-api-key";
 
+            db.createClient({
+                id: "integration-test",
+                name: "Integration Test Client",
+                email: null
+            });
+
             db.createApiKey(
                 apiKey,
                 "integration-test",
@@ -132,14 +138,16 @@ describe("Matric Verifier HTTP Integration", () => {
 
         // Preserve the real implementation so the final audit insert
         // happens before the simulated failure is thrown.
-        const originalLogAudit = db.logAudit.bind(db);
+        const seededClient = db.db.prepare("SELECT id FROM clients LIMIT 1").get().id;
+        const RepoProto = Object.getPrototypeOf(db.forClient(seededClient));
+        const originalAudit = RepoProto.audit;
 
         let failureInjected = false;
 
         const logAuditSpy = jest
-            .spyOn(db, "logAudit")
-            .mockImplementation((...args) => {
-                originalLogAudit(...args);
+            .spyOn(RepoProto, "audit")
+            .mockImplementation(function (...args) {
+                originalAudit.apply(this, args);
 
                 // Fail only after the route's final VERIFY audit
                 // has actually been inserted.

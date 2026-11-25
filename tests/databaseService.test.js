@@ -1,4 +1,4 @@
-﻿describe("DatabaseService", () => {
+describe("DatabaseService", () => {
     const DatabaseService = require("../lib/database/DatabaseService");
     const path = require("path");
     const fs = require("fs");
@@ -117,6 +117,32 @@
         expect(auditLog[0].entity_type).toBe("candidate");
     });
     
+    test("legacy API-key operations never write raw keys to audit records", () => {
+        const { fingerprint } = require("../lib/database/TenantRepository");
+        const key = "legacy-secret-key-for-audit-test-123456";
+        const clientId = "legacy-test-client";
+
+        db.createClient({ id: clientId, name: "Legacy Test Client", email: null });
+
+        const created = db.createApiKey(key, clientId, "legacy test");
+        expect(created.key).toBe(key);
+        expect(db.getApiKey(key)).not.toBeNull();
+
+        db.revokeApiKey(key);
+        expect(db.getApiKey(key)).toBeNull();
+
+        const audit = db.db.prepare(
+            "SELECT entity_id, details FROM audit_log WHERE entity_type = 'api_key' ORDER BY id"
+        ).all();
+
+        expect(audit).toHaveLength(2);
+        expect(audit.map((row) => row.entity_id)).toEqual([
+            fingerprint(key),
+            fingerprint(key)
+        ]);
+        expect(JSON.stringify(audit)).not.toContain(key);
+    });
+
     test("returns database statistics", () => {
         db.createCandidate({
             id: "CAND-001",
