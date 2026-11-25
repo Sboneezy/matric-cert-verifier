@@ -5,7 +5,8 @@ const fs   = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 
-const KEY = "mk_d6cb373a983e044210246690595f6566055e4c2707be3eae40b47163684c172b";
+const KEY = process.env.API_KEY;
+if (!KEY) { console.error("API_KEY environment variable is required."); process.exit(1); }
 const PDF_PATH = path.join(__dirname, "..", "test-cert-tmp.pdf");
 
 // 1. Create a test PDF
