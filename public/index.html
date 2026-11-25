@@ -658,28 +658,66 @@
     // Batches
     async function loadBatches() {
         const batchList = document.getElementById('batchList');
-        
+
         try {
             const response = await apiFetch('/api/v1/batches');
             const json = await response.json();
             const batches = json.data || json;
-            
-            if (!batches || batches.length === 0) {
+
+            if (!Array.isArray(batches) || batches.length === 0) {
                 batchList.innerHTML = '<p style="color: var(--muted);">No batches created yet.</p>';
                 return;
             }
-            
-            batchList.innerHTML = batches.map(batch => `
-                <div class="batch-item">
-                    <div class="batch-info">
-                        <strong>Batch #${batch.batch_number || batch.batchNumber}</strong> — ${esc(batch.provider)}
-                        <div style="font-size: 13px; color: var(--muted);">
-                            ${batch.candidate_count || batch.candidateCount || 0} candidates | Created: ${new Date(batch.created_at || batch.createdAt).toLocaleDateString()}
-                        </div>
-                    </div>
-                    <span class="batch-status status-${(batch.status || 'draft').toLowerCase()}">${batch.status || 'Draft'}</span>
-                </div>
-            `).join('');
+
+            batchList.replaceChildren();
+
+            batches.forEach(batch => {
+                const item = document.createElement('div');
+                item.classList.add('batch-item');
+
+                const info = document.createElement('div');
+                info.classList.add('batch-info');
+
+                const heading = document.createElement('strong');
+                const batchNumber = batch.batch_number || batch.batchNumber || '';
+                const provider = batch.provider == null ? '' : String(batch.provider);
+                heading.textContent = `Batch #${String(batchNumber)} — ${provider}`;
+
+                const metadata = document.createElement('div');
+                metadata.style.fontSize = '13px';
+                metadata.style.color = 'var(--muted)';
+
+                const candidateCount =
+                    batch.candidate_count || batch.candidateCount || 0;
+                const createdAt = batch.created_at || batch.createdAt;
+                const createdDate = new Date(createdAt);
+                const createdLabel = Number.isNaN(createdDate.getTime())
+                    ? 'Unknown date'
+                    : createdDate.toLocaleDateString();
+
+                metadata.textContent =
+                    `${String(candidateCount)} candidates | Created: ${createdLabel}`;
+
+                info.append(heading, metadata);
+
+                const status = document.createElement('span');
+                status.classList.add('batch-status');
+
+                const statusLabel = batch.status == null || batch.status === ''
+                    ? 'Draft'
+                    : String(batch.status);
+                const statusToken = statusLabel.toLowerCase();
+
+                if (/^[a-z0-9-]+$/.test(statusToken)) {
+                    status.classList.add(`status-${statusToken}`);
+                } else {
+                    status.classList.add('status-unknown');
+                }
+
+                status.textContent = statusLabel;
+                item.append(info, status);
+                batchList.appendChild(item);
+            });
         } catch (error) {
             batchList.innerHTML = '<p style="color: var(--error);">' + esc(error.message) + '</p>';
         }
@@ -688,34 +726,57 @@
     // Reviews
     async function loadReviews() {
         const reviewList = document.getElementById('reviewList');
-        
+
         try {
             const response = await apiFetch('/api/v1/reviews/pending');
             const reviews = await response.json();
             const list = Array.isArray(reviews) ? reviews : (reviews.data || []);
-            
-            if (list.length === 0) {
+
+            if (!Array.isArray(list) || list.length === 0) {
                 reviewList.innerHTML = '<p style="color: var(--muted);">No items pending review.</p>';
                 return;
             }
-            
-            reviewList.innerHTML = list.map(review => {
+
+            reviewList.replaceChildren();
+
+            list.forEach(review => {
                 const corrections = review.corrections || {};
-                const fields = corrections.fieldsToReview || [];
-                const docLabel = corrections.document || review.extraction_id || review.id;
-                return `
-                <div class="batch-item">
-                    <div class="batch-info">
-                        <strong>${esc(docLabel)}</strong>
-                        <div style="font-size: 13px; color: var(--muted);">
-                            ${fields.length} field(s) need review
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="alert('Review ${review.id}')" style="padding: 8px 16px; font-size: 13px;">
-                        Review
-                    </button>
-                </div>`;
-            }).join('');
+                const fields = Array.isArray(corrections.fieldsToReview)
+                    ? corrections.fieldsToReview
+                    : [];
+                const docLabel =
+                    corrections.document || review.extraction_id || review.id || '';
+
+                const item = document.createElement('div');
+                item.classList.add('batch-item');
+
+                const info = document.createElement('div');
+                info.classList.add('batch-info');
+
+                const heading = document.createElement('strong');
+                heading.textContent = String(docLabel);
+
+                const metadata = document.createElement('div');
+                metadata.style.fontSize = '13px';
+                metadata.style.color = 'var(--muted)';
+                metadata.textContent = `${fields.length} field(s) need review`;
+
+                info.append(heading, metadata);
+
+                const button = document.createElement('button');
+                button.classList.add('btn', 'btn-primary');
+                button.style.padding = '8px 16px';
+                button.style.fontSize = '13px';
+                button.textContent = 'Review';
+
+                const reviewId = String(review.id == null ? '' : review.id);
+                button.addEventListener('click', () => {
+                    window.alert('Review ' + reviewId);
+                });
+
+                item.append(info, button);
+                reviewList.appendChild(item);
+            });
         } catch (error) {
             reviewList.innerHTML = '<p style="color: var(--error);">' + esc(error.message) + '</p>';
         }
