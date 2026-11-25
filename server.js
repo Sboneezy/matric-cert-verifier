@@ -29,18 +29,9 @@ const server = app.listen(env.port, () => {
             });
         }
 
-        if (db.listApiKeys().length === 0) {
-            const SecurityService = require("./lib/security/SecurityService");
-            const security = new SecurityService();
-            const key = security.generateApiKey();
-
-            db.createApiKey(key, "dev", "Development bootstrap key");
-
-            logger.warn(
-                { key },
-                "DEV BOOTSTRAP KEY created - use this for local API calls"
-            );
-        }
+        // API keys must be provisioned explicitly using
+        // scripts/bootstrap-client.js. Never generate or log
+        // credentials during application startup.
     }
 });
 

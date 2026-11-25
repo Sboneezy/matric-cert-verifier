@@ -132,17 +132,14 @@ function createTestPdf(outputPath) {
     console.log("║   MATRIC VERIFIER — FUNCTIONAL TEST  ║");
     console.log("╚══════════════════════════════════════╝");
 
-    // Load API key from DB
-    const DatabaseService = require("../lib/database/DatabaseService");
-    const db = new DatabaseService("./data/matric-verifier.db");
-    const keys = db.listApiKeys().filter(k => k.active === 1);
-    db.close();
-    if (keys.length === 0) {
-        console.error("\nNo active API keys found. Start the server first so it generates a bootstrap key.");
+    // Use an explicitly provisioned API key; never discover credentials from the database.
+    const apiKey = process.env.API_KEY;
+    if (!apiKey || !apiKey.trim()) {
+        console.error("\nAPI_KEY environment variable is required.");
+        console.error('Set it to a provisioned client API key before running this test.');
         process.exit(1);
     }
-    global.API_KEY = keys[0].key;
-    console.log(`\nUsing API key: ${global.API_KEY.substring(0, 12)}...`);
+    global.API_KEY = apiKey;
 
     // ── 1. Infrastructure ──────────────────────────────────────────
     section("Infrastructure");
@@ -185,15 +182,18 @@ function createTestPdf(outputPath) {
             : fail("Valid API key grants access", `got ${r.status}`);
     } catch (e) { fail("Valid API key grants access", e.message); }
 
+    const savedKey = global.API_KEY;
     try {
-        const saved = global.API_KEY;
         global.API_KEY = "mk_invalid_key_that_does_not_exist";
         const r = await request("GET", "/api/v1/candidates");
-        global.API_KEY = saved;
         r.status === 401
             ? pass("Invalid API key is rejected (401)")
             : fail("Invalid API key is rejected", `got ${r.status}`);
-    } catch (e) { global.API_KEY = keys[0].key; fail("Invalid API key rejected", e.message); }
+    } catch (e) {
+        fail("Invalid API key rejected", e.message);
+    } finally {
+        global.API_KEY = savedKey;
+    }
 
     // ── 3. API endpoints ───────────────────────────────────────────
     section("API Endpoints");
@@ -228,7 +228,7 @@ function createTestPdf(outputPath) {
             { label: "Temp test key", clientId: "test" }, "application/json");
         if (r.status === 201 && r.body.key) {
             tempKey = r.body.key;
-            pass("Generate new API key", tempKey.substring(0, 12) + "...");
+            pass("Generate new API key");
         } else { fail("Generate new API key", JSON.stringify(r.body)); }
     } catch (e) { fail("Generate new API key", e.message); }
 
