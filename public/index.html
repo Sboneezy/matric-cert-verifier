@@ -325,10 +325,10 @@
 <div class="nav">
     <h1>Matric Certificate Verifier</h1>
     <div class="nav-tabs">
-        <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
-        <button class="nav-tab" onclick="showTab('upload')">Upload</button>
-        <button class="nav-tab" onclick="showTab('batches')">Batches</button>
-        <button class="nav-tab" onclick="showTab('review')">Review</button>
+        <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+        <button class="nav-tab" data-tab="upload">Upload</button>
+        <button class="nav-tab" data-tab="batches">Batches</button>
+        <button class="nav-tab" data-tab="review">Review</button>
     </div>
 </div>
 
@@ -338,8 +338,8 @@
             <strong>API key</strong>
             <input type="password" id="apiKeyInput" placeholder="Paste your API key" autocomplete="off"
                    style="flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:5px;">
-            <button class="btn btn-primary" onclick="saveKey()" style="padding:8px 16px;">Save</button>
-            <button class="btn btn-outline" onclick="clearKey()" style="padding:8px 16px;">Clear</button>
+            <button class="btn btn-primary" id="saveKeyBtn" style="padding:8px 16px;">Save</button>
+            <button class="btn btn-outline" id="clearKeyBtn" style="padding:8px 16px;">Clear</button>
             <span id="keyStatus" style="font-size:13px;color:var(--muted);"></span>
         </div>
     </div>
@@ -378,7 +378,7 @@
                 Accepted formats: PDF, JPG, PNG, TIFF
             </p>
 
-            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-area" id="uploadArea">
                 <div class="icon">📄</div>
                 <p style="font-size: 18px; font-weight: 500;">Drop files here or click to browse</p>
                 <p style="color: var(--muted); margin-top: 5px;">Supports PDF, JPG, PNG, TIFF</p>
@@ -387,7 +387,7 @@
 
             <div class="file-list" id="fileList"></div>
 
-            <button class="btn btn-primary" id="processBtn" onclick="processFiles()" disabled style="margin-top: 15px;">
+            <button class="btn btn-primary" id="processBtn" disabled style="margin-top: 15px;">
                 Process Files
             </button>
 
@@ -495,7 +495,7 @@
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
         
         document.getElementById(tabName).classList.add('active');
-        event.target.classList.add('active');
+        document.querySelector('.nav-tab[data-tab="' + tabName + '"]').classList.add('active');
         
         if (tabName === 'dashboard') loadDashboard();
         if (tabName === 'batches') loadBatches();
@@ -554,7 +554,7 @@
                     <div class="file-name">${esc(file.name)}</div>
                     <div class="file-size">${formatSize(file.size)}</div>
                 </div>
-                <button class="btn btn-outline" onclick="removeFile(${index})" style="padding: 6px 12px; font-size: 13px;">
+                <button class="btn btn-outline" data-remove="${index}" style="padding: 6px 12px; font-size: 13px;">
                     Remove
                 </button>
             </div>
@@ -781,6 +781,21 @@
             reviewList.innerHTML = '<p style="color: var(--error);">' + esc(error.message) + '</p>';
         }
     }
+
+    // Event wiring (inline onclick attributes are blocked by the CSP)
+    document.querySelectorAll('.nav-tab').forEach(function (b) {
+        b.addEventListener('click', function () { showTab(b.dataset.tab); });
+    });
+    document.getElementById('saveKeyBtn').addEventListener('click', saveKey);
+    document.getElementById('clearKeyBtn').addEventListener('click', clearKey);
+    uploadArea.addEventListener('click', function (e) {
+        if (e.target !== fileInput) fileInput.click();
+    });
+    processBtn.addEventListener('click', processFiles);
+    fileList.addEventListener('click', function (e) {
+        const b = e.target.closest('[data-remove]');
+        if (b) removeFile(Number(b.dataset.remove));
+    });
 
     // Initial load
     loadDashboard();
